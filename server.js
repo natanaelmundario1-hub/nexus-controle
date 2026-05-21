@@ -1,222 +1,83 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS Crédito</title>
-</head>
-<body style="background-color:#020617; color:white; font-family:sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; margin: 0;">
+const express = require('express');
+const cors = require('cors');
+const app = express();
 
-    <div style="width: 100%; max-width: 420px; background-color: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
-        
-        <div style="border-bottom: 1px solid #1e293b; padding-bottom: 16px; margin-bottom: 20px;">
-            <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: #ffffff;">🛡️ NEXUS | Crédito Soberano</h2>
-            <p style="margin: 4px 0 0 0; font-size: 12px; color: #94a3b8;">Nova Simulação Expressa — Estimativa de 2 minutes.</p>
-        </div>
+app.use(cors({ origin: '*' }));
+app.use(express.json());
 
-        <!-- PAINEL DE LOGIN -->
-        <div id="painelLogin" style="display: flex; flex-direction: column; gap: 16px;">
-            <div>
-                <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Usuário de Acesso</label>
-                <input type="text" id="campoUsuario" placeholder="Digite seu usuário" style="width: 100%; background-color: #020617; border: 1px solid #1e293b; color: #ffffff; padding: 12px; font-size: 14px; border-radius: 12px; box-sizing: border-box; outline: none;">
-            </div>
-            <div>
-                <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Senha Secreta</label>
-                <input type="password" id="campoSenha" placeholder="••••••••" style="width: 100%; background-color: #020617; border: 1px solid #1e293b; color: #ffffff; padding: 12px; font-size: 14px; border-radius: 12px; box-sizing: border-box; outline: none;">
-            </div>
-            <button type="button" onclick="realizarLogin()" style="width: 100%; background-color: #3b82f6; color: #ffffff; font-weight: 600; padding: 14px; font-size: 14px; border-radius: 12px; border: none; cursor: pointer; margin-top: 8px;">Acessar Plataforma</button>
-        </div>
+const USUARIOS_REGISTRADOS = {
+    "joao_consultor": { senha: "senha123", status: "pago", nome: "João Silva" },
+    "maria_corretora": { senha: "456senha", status: "pago", nome: "Maria Souza" }
+};
 
-        <!-- PAINEL DA CALCULADORA INCREMENTADA -->
-        <div id="painelCalculadora" style="display: none;">
-            <form style="display: flex; flex-direction: column; gap: 16px;">
-                <div>
-                    <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Valor de Venda do Imóvel (R$)</label>
-                    <input type="text" id="valorImovel" value="250.000" style="width: 100%; background-color: #020617; border: 1px solid #1e293b; color: #ffffff; padding: 12px; font-size: 14px; border-radius: 12px; box-sizing: border-box; outline: none;">
-                </div>
+const sessoesOnline = {};
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                    <div>
-                        <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Renda Comprovada</label>
-                        <input type="text" id="rendaBruta" value="2.500" style="width: 100%; background-color: #020617; border: 1px solid #1e293b; color: #ffffff; padding: 12px; font-size: 14px; border-radius: 12px; box-sizing: border-box; outline: none;">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Renda Informal</label>
-                        <input type="text" id="rendaInformal" value="0" style="width: 100%; background-color: #020617; border: 1px solid #1e293b; color: #ffffff; padding: 12px; font-size: 14px; border-radius: 12px; box-sizing: border-box; outline: none;">
-                    </div>
-                </div>
+app.get('/', (req, res) => {
+    res.send("🛡️ Servidor Nexus Online e Protegido!");
+});
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                    <div>
-                        <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Entrada (R$)</label>
-                        <input type="text" id="valorEntrada" value="50.000" style="width: 100%; background-color: #020617; border: 1px solid #1e293b; color: #ffffff; padding: 12px; font-size: 14px; border-radius: 12px; box-sizing: border-box; outline: none;">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Saldo FGTS</label>
-                        <input type="text" id="valorFgts" value="0" style="width: 100%; background-color: #020617; border: 1px solid #1e293b; color: #ffffff; padding: 12px; font-size: 14px; border-radius: 12px; box-sizing: border-box; outline: none;">
-                    </div>
-                </div>
+app.post('/api/login', (req, res) => {
+    const { usuario, senha } = req.body;
+    const conta = USUARIOS_REGISTRADOS[usuario];
+    const ipAtual = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
-                <!-- NOVAS OPÇÕES ADICIONADAS -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                    <div>
-                        <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Prazo (Meses)</label>
-                        <input type="number" id="prazoMeses" value="360" min="12" max="420" style="width: 100%; background-color: #020617; border: 1px solid #1e293b; color: #ffffff; padding: 12px; font-size: 14px; border-radius: 12px; box-sizing: border-box; outline: none;">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Juros Anual (%)</label>
-                        <input type="text" id="taxaJuros" value="9,5" style="width: 100%; background-color: #020617; border: 1px solid #1e293b; color: #ffffff; padding: 12px; font-size: 14px; border-radius: 12px; box-sizing: border-box; outline: none;">
-                    </div>
-                </div>
-
-                <button type="button" onclick="executarMotorCalculo()" style="width: 100%; background-color: #059669; color: #ffffff; font-weight: 600; padding: 14px; font-size: 14px; border-radius: 12px; border: none; cursor: pointer; margin-top: 8px;">Calcular Viabilidade</button>
-            </form>
-        </div>
-
-        <!-- PAINEL DE RESULTADOS ATUALIZADO -->
-        <div id="painelResultado" style="display: none; background-color: #020617; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; margin-top: 24px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 12px; margin-bottom: 16px;">
-                <span style="font-size: 11px; font-weight: 700; color: #34d399; letter-spacing: 1px;">CERTIFICADO DE VIABILIDADE</span>
-                <span id="tokenCertificado" style="font-size: 11px; background-color: #1e293b; color: #cbd5e1; font-family: monospace; padding: 4px 8px; border-radius: 4px;">---</span>
-            </div>
-            <div id="alertaErro" style="display: none; font-size: 13px; background-color: rgba(127, 29, 29, 0.4); border: 1px solid #7f1d1d; color: #f87171; padding: 12px; border-radius: 12px; margin-bottom: 16px;"></div>
-            <div id="dadosSucesso" style="display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
-                <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Valor Financiado:</span> <span id="resFinanciamento" style="font-weight: 600; color: #fff;">R$ 0,00</span></div>
-                <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Prazo Escolhido:</span> <span id="resPrazo" style="font-weight: 600; color: #fff;">0 meses</span></div>
-                <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Juros Mensal Base:</span> <span id="resJuros" style="font-weight: 600; color: #fff;">0,00%</span></div>
-                <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Parcela Estimada:</span> <span id="resParcela" style="font-weight: 600; color: #fff;">R$ 0,00</span></div>
-                <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Status da Operação:</span> <span id="resStatus" style="font-weight: 600;">---</span></div>
-            </div>
-        </div>
-
-    </div>
-
-<script>
-    const ENDERECO_SERVIDOR = "https://onrender.com";
-
-    let tokenSessao = null;
-    let usuarioLogado = null;
-
-    function limparNumero(valor) {
-        return parseFloat(
-            valor.toString()
-            .replace(/\./g, '')
-            .replace(',', '.')
-        ) || 0;
+    if (!conta || conta.senha !== String(senha)) {
+        return res.status(401).json({ erro: "Usuário ou senha incorretos!" });
     }
 
-    async function realizarLogin() {
-        const usuario = document.getElementById('campoUsuario').value;
-        const senha = document.getElementById('campoSenha').value;
-
-        try {
-            const resposta = await fetch(
-                `${ENDERECO_SERVIDOR}/api/login`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ usuario, senha })
-                }
-            );
-
-            if (!resposta.ok) {
-                alert("Erro no servidor.");
-                return;
-            }
-
-            const dados = await resposta.json();
-
-            if (dados.erro) {
-                alert(dados.erro);
-                return;
-            }
-
-            tokenSessao = dados.token;
-            usuarioLogado = usuario;
-
-            document.getElementById('painelLogin').style.display = 'none';
-            document.getElementById('painelCalculadora').style.display = 'block';
-
-        } catch (erro) {
-            alert("Erro de conexão.");
-            console.log(erro);
-        }
+    if (conta.status !== "pago") {
+        return res.status(403).json({ erro: "Acesso suspenso. Verifique o pagamento!" });
     }
 
-    async function executarMotorCalculo() {
-        if (!tokenSessao) {
-            alert("Faça login primeiro.");
-            return;
-        }
-
-        const valorImovel = limparNumero(document.getElementById('valorImovel').value);
-        const rendaBruta = limparNumero(document.getElementById('rendaBruta').value);
-        const rendaInformal = limparNumero(document.getElementById('rendaInformal').value);
-        const valorEntrada = limparNumero(document.getElementById('valorEntrada').value);
-        const valorFgts = limparNumero(document.getElementById('valorFgts').value);
-        const meses = parseInt(document.getElementById('prazoMeses').value) || 360;
-        const taxaAnual = limparNumero(document.getElementById('taxaJuros').value);
-
-        var painel = document.getElementById('painelResultado');
-        var alertaErro = document.getElementById('alertaErro');
-        var dadosSucesso = document.getElementById('dadosSucesso');
-        var tokenCertificado = document.getElementById('tokenCertificado');
-
-        try {
-            const resposta = await fetch(
-                `${ENDERECO_SERVIDOR}/api/calcular-credito`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        token: tokenSessao,
-                        usuario: usuarioLogado,
-                        valorImovel,
-                        rendaBruta,
-                        rendaInformal,
-                        valorEntrada,
-                        valorFgts,
-                        meses,
-                        taxaAnual
-                    })
-                }
-            );
-
-            if (!resposta.ok) {
-                alert("Erro ao calcular.");
-                return;
-            }
-
-            const resultado = await resposta.json();
-            painel.style.display = 'block';
-
-            if (resultado.erro) {
-                alertaErro.textContent = resultado.erro;
-                alertaErro.style.display = "block";
-                dadosSucesso.style.display = "none";
-                tokenCertificado.textContent = "NEXUS-REJEITADO";
-                return;
-            }
-
-            alertaErro.style.display = "none";
-            dadosSucesso.style.display = "flex";
-            
-            tokenCertificado.innerText = resultado.tokenCertificado;
-            document.getElementById('resFinanciamento').innerText = "R$ " + parseFloat(resultado.valorFinanciado).toLocaleString('pt-BR', {minimumFractionDigits: 2});
-            document.getElementById('resPrazo').innerText = resultado.meses + " meses";
-            document.getElementById('resJuros').innerText = resultado.taxaAplicada + "% a.m.";
-            document.getElementById('resParcela').innerText = "R$ " + parseFloat(resultado.parcelaEstimada).toLocaleString('pt-BR', {minimumFractionDigits: 2});
-            
-            const statusEl = document.getElementById('resStatus');
-            statusEl.innerText = resultado.statusOperacao;
-            statusEl.style.color = "#34d399";
-
-        } catch (erro) {
-            alert("Erro no servidor.");
-            console.log(erro);
-        }
+    if (sessoesOnline[usuario] && sessoesOnline[usuario].ip !== ipAtual) {
+        USUARIOS_REGISTRADOS[usuario].status = "bloqueado_por_compartilhamento";
+        delete sessoesOnline[usuario];
+        return res.status(403).json({ erro: "Conta bloqueada por múltiplos acessos simultâneos." });
     }
-</script>
 
-</body>
-</html>
+    const tokenUnico = `autorizado_${usuario}_${Math.random().toString(36).substr(2, 9)}`;
+    sessoesOnline[usuario] = { token: tokenUnico, ip: ipAtual, loginEm: new Date() };
+
+    res.json({ sucesso: true, token: tokenUnico, nome: conta.nome });
+});
+
+app.post('/api/calcular-credito', (req, res) => {
+    const { token, usuario, valorImovel, rendaBruta, rendaInformal, valorEntrada, valorFgts, meses, taxaAnual } = req.body;
+    const ipAtual = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const sessaoValida = sessoesOnline[usuario];
+
+    if (!sessaoValida || sessaoValida.token !== token || sessaoValida.ip !== ipAtual) {
+        return res.status(401).json({ erro: "Sessão expirada. Faça login novamente." });
+    }
+
+    const rendaTotal = rendaBruta + rendaInformal;
+    const valorFinanciado = valorImovel - (valorEntrada + valorFgts);
+    const parcelaMaxima = rendaTotal * 0.30;
+
+    const taxaMensal = Math.pow(1 + (taxaAnual / 100), 1 / 12) - 1;
+    const parcelaEstimada = valorFinanciado * ( (taxaMensal * Math.pow(1 + taxaMensal, meses)) / (Math.pow(1 + taxaMensal, meses) - 1) );
+
+    if (valorFinanciado <= 0) {
+        return res.status(400).json({ erro: "Erro: Entrada e FGTS cobrem o valor do imóvel." });
+    }
+
+    if (parcelaEstimada > parcelaMaxima) {
+        return res.json({
+            tokenCertificado: "NEXUS-REJEITADO",
+            statusOperacao: "REPROVADO",
+            erro: `⚠️ Renda Insuficiente. A parcela de R$ ${parcelaEstimada.toFixed(2)} comprometeu mais de 30% da renda.`
+        });
+    }
+
+    res.json({
+        tokenCertificado: `NEXUS-${Math.floor(100000 + Math.random() * 900000)}`,
+        valorFinanciado: valorFinanciado.toFixed(2),
+        meses: meses,
+        taxaAplicada: (taxaMensal * 100).toFixed(2),
+        parcelaEstimada: parcelaEstimada.toFixed(2),
+        statusOperacao: "PRE-APROVADO"
+    });
+});
+
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`🛡️ Servidor rodando na porta ${PORT}`));
