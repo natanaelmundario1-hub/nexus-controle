@@ -142,7 +142,7 @@ def atualizar_indicadores():
         cursor.close()
         conn.close()
 
-        return jsonify({"sucesso": True, "mensagem": f"Indicador '{chave}' atualizado com sucesso no Nexus."}), 200
+        return jsonify({"sucesso": True, "mensagem": f"Indicador '{chave}' updated com sucesso no Nexus."}), 200
 
     except Exception as e:
         return jsonify({"sucesso": False, "erro": str(e)}), 500
@@ -290,3 +290,5 @@ def calcular_credito():
     comprometimento = renda_total * 0.30
 
     if primeira_parcela <= comprometimento:
+        mensagem = f'''🛡️ CERTIFICADO DE VIABILIDADE APROVADO
+
