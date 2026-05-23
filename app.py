@@ -1,7 +1,7 @@
 import os
 import uuid
 import requests
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -19,7 +19,7 @@ def obter_conexao():
 TOKENS_VALIDOS = {}
 
 # ===================================
-# INTEGRAÇÃO COM O MAKE / TALLY (Novas Rotas)
+# INTEGRAÇÃO COM O MAKE / TALLY
 # ===================================
 
 @app.route('/api/webhook-registrar', methods=['POST'])
@@ -108,7 +108,66 @@ def atualizar_creditos():
 
 
 # ===================================
-# LOGIN (Integrado ao CodePen)
+# ATUALIZAÇÃO DE DADOS OFICIAIS (Caixa / Diário Oficial / Governo)
+# ===================================
+
+@app.route('/api/atualizar-indicadores', methods=['POST'])
+def atualizar_indicadores():
+    """ Rota acionada pelo Make para salvar dados coletados pelo Firecrawl """
+    dados = request.get_json() or {}
+    
+    chave = dados.get('chave')   # Ex: 'taxa_caixa', 'diario_oficial', 'selic'
+    valor = dados.get('valor')   # O texto ou número extraído pelo Firecrawl
+    fonte = dados.get('fonte')   # Ex: 'Caixa Econômica Federal' ou 'Diário Oficial'
+
+    if not chave or not valor:
+        return jsonify({"sucesso": False, "erro": "Campos 'chave' e 'valor' são obrigatórios."}), 400
+
+    try:
+        conn = obter_conexao()
+        cursor = conn.cursor()
+
+        # Insere o indicador ou atualiza o valor caso ele já exista
+        cursor.execute(
+            """
+            INSERT INTO indicadores_mercado (chave, valor, fonte, ultima_atualizacao)
+            VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
+            ON CONFLICT (chave) DO UPDATE
+            SET valor = EXCLUDED.valor, fonte = EXCLUDED.fonte, ultima_atualizacao = CURRENT_TIMESTAMP;
+            """,
+            (chave, str(valor), fonte)
+        )
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({"sucesso": True, "mensagem": f"Indicador '{chave}' atualizado com sucesso no Nexus."}), 200
+
+    except Exception as e:
+        return jsonify({"sucesso": False, "erro": str(e)}), 500
+
+
+@app.route('/api/obter-indicadores', methods=['GET'])
+def obter_indicadores():
+    """ Rota interna ou para o painel consultar as taxas vigentes atuais """
+    try:
+        conn = obter_conexao()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        
+        cursor.execute("SELECT * FROM indicadores_mercado;")
+        indicadores = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({"sucesso": True, "indicadores": indicadores}), 200
+    except Exception as e:
+        return jsonify({"sucesso": False, "erro": str(e)}), 500
+
+
+# ===================================
+# LOGIN (Integrado ao CodePen / index.html)
 # ===================================
 
 @app.route('/api/login', methods=['POST'])
@@ -231,23 +290,3 @@ def calcular_credito():
     comprometimento = renda_total * 0.30
 
     if primeira_parcela <= comprometimento:
-        mensagem = f'''🛡️ CERTIFICADO DE VIABILIDADE APROVADO
-
-Valor financiado: R$ {valor_financiar:,.2f}
-Primeira parcela: R$ {primeira_parcela:,.2f}
-Limite de renda (30%): R$ {comprometimento:,.2f}'''
-    else:
-        mensagem = f'''⚠️ CRÉDITO NÃO RECOMENDADO
-
-Parcela estimada: R$ {primeira_parcela:,.2f}
-Limite máximo de comprometimento: R$ {comprometimento:,.2f}'''
-
-    return jsonify({"mensagem": mensagem})
-
-
-# ===================================
-# INICIAR SERVIDOR
-# ===================================
-
-if __name__ == '__main__':
-    app.run(debug=True)
