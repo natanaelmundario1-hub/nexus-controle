@@ -205,7 +205,7 @@ def atualizar_indicadores():
 
         return jsonify({
             "sucesso": True,
-            "mensagem": "Indicador updated."
+            "mensagem": "Indicador atualizado."
         })
 
     except Exception as e:
@@ -260,10 +260,17 @@ def calcular_credito():
         conn = obter_conexao()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-        cursor.execute("""
-            SELECT id, creditos FROM usuarios WHERE token_ativo = %s
-        """, (token,))
-        usuario_db = cursor.fetchone()
+        # 🛠️ MODO DESENVOLVEDOR: Suporte para o Token Mestre de Acesso Livre
+        if token == "TOKEN_MESTRE_DESENVOLVIMENTO":
+            usuario_db = {
+                "id": 0,
+                "creditos": 9999
+            }
+        else:
+            cursor.execute("""
+                SELECT id, creditos FROM usuarios WHERE token_ativo = %s
+            """, (token,))
+            usuario_db = cursor.fetchone()
 
         if not usuario_db:
             cursor.close()
@@ -321,11 +328,3 @@ def calcular_credito():
                 return jsonify({"sucesso": False, "erro": "Placa e RENAVAM são obrigatórios para veículos."}), 400
 
             taxa_anual = 0.14 if ano_veiculo >= 2020 else 0.19
-            taxa_mensal = taxa_anual / 12
-            valor_financiado = valor_veiculo * 0.90
-
-            parcela_estimada = (valor_financiado * taxa_mensal) / (1 - (1 + taxa_mensal)**(-prazo_meses))
-            parcela_maxima = renda_mensal * 0.30
-            viavel = parcela_estimada <= parcela_maxima
-
-            resposta_simulacao = {
