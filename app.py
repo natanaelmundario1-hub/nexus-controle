@@ -17,7 +17,6 @@ TOKENS_VALIDOS = {}
 # ===================================
 
 def obter_conexao():
-
     return psycopg2.connect(
         DATABASE_URL,
         sslmode='require'
@@ -28,9 +27,7 @@ def obter_conexao():
 # ===================================
 
 def criar_tabelas():
-
     try:
-
         conn = obter_conexao()
         cursor = conn.cursor()
 
@@ -59,14 +56,11 @@ def criar_tabelas():
         """)
 
         conn.commit()
-
         cursor.close()
         conn.close()
-
         print("Tabelas criadas com sucesso.")
 
     except Exception as e:
-
         print("Erro ao criar tabelas:", e)
 
 # ===================================
@@ -75,7 +69,6 @@ def criar_tabelas():
 
 @app.route('/')
 def home():
-
     return render_template('index.html')
 
 # ===================================
@@ -84,7 +77,6 @@ def home():
 
 @app.route('/api/webhook-registrar', methods=['POST'])
 def webhook_registrar():
-
     dados = request.get_json() or {}
 
     email = dados.get('email', '')
@@ -94,7 +86,6 @@ def webhook_registrar():
     corretores = dados.get('corretores', '1')
 
     if not nome or not senha:
-
         return jsonify({
             "sucesso": False,
             "erro": "Nome e WhatsApp obrigatórios."
@@ -103,55 +94,22 @@ def webhook_registrar():
     creditos_iniciais = 100 if corretores == 'mais de 3' else 20
 
     try:
-
         conn = obter_conexao()
-
-        cursor = conn.cursor(
-            cursor_factory=RealDictCursor
-        )
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
 
         cursor.execute("""
-            INSERT INTO usuarios
-            (
-                email,
-                nome,
-                senha,
-                plano,
-                corretores,
-                creditos
-            )
-
-            VALUES
-            (
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s
-            )
-
+            INSERT INTO usuarios (email, nome, senha, plano, corretores, creditos)
+            VALUES (%s, %s, %s, %s, %s, %s)
             ON CONFLICT (senha)
-
             DO UPDATE SET
                 plano = EXCLUDED.plano,
                 corretores = EXCLUDED.corretores,
                 creditos = usuarios.creditos + EXCLUDED.creditos
-
             RETURNING *;
-        """, (
-            email,
-            nome,
-            senha,
-            plano,
-            corretores,
-            creditos_iniciais
-        ))
+        """, (email, nome, senha, plano, corretores, creditos_iniciais))
 
         usuario = cursor.fetchone()
-
         conn.commit()
-
         cursor.close()
         conn.close()
 
@@ -162,7 +120,6 @@ def webhook_registrar():
         })
 
     except Exception as e:
-
         return jsonify({
             "sucesso": False,
             "erro": str(e)
@@ -174,48 +131,26 @@ def webhook_registrar():
 
 @app.route('/api/login', methods=['POST'])
 def login():
-
     dados = request.get_json() or {}
-
     usuario = dados.get('usuario')
     senha = dados.get('senha')
 
     try:
-
         conn = obter_conexao()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-        cursor = conn.cursor(
-            cursor_factory=RealDictCursor
-        )
-
-        cursor.execute(
-            """
-            SELECT *
-            FROM usuarios
-            WHERE senha = %s
-            """,
-            (usuario,)
-        )
-
+        cursor.execute("SELECT * FROM usuarios WHERE senha = %s", (usuario,))
         usuario_encontrado = cursor.fetchone()
 
         if usuario_encontrado:
-
             token = str(uuid.uuid4())
-
             TOKENS_VALIDOS[token] = usuario
 
             cursor.execute("""
-                UPDATE usuarios
-                SET token_ativo = %s
-                WHERE senha = %s
-            """, (
-                token,
-                usuario
-            ))
+                UPDATE usuarios SET token_ativo = %s WHERE senha = %s
+            """, (token, usuario))
 
             conn.commit()
-
             cursor.close()
             conn.close()
 
@@ -225,19 +160,15 @@ def login():
                 "nome": usuario_encontrado['nome'],
                 "creditos": usuario_encontrado['creditos']
             })
-
         else:
-
             cursor.close()
             conn.close()
-
             return jsonify({
                 "sucesso": False,
                 "erro": "Usuário não encontrado."
             }), 401
 
     except Exception as e:
-
         return jsonify({
             "sucesso": False,
             "erro": str(e)
@@ -249,59 +180,35 @@ def login():
 
 @app.route('/api/atualizar-indicadores', methods=['POST'])
 def atualizar_indicadores():
-
     dados = request.get_json() or {}
-
     chave = dados.get('chave')
     valor = dados.get('valor')
     fonte = dados.get('fonte')
 
     try:
-
         conn = obter_conexao()
         cursor = conn.cursor()
 
         cursor.execute("""
-            INSERT INTO indicadores_mercado
-            (
-                chave,
-                valor,
-                fonte,
-                ultima_atualizacao
-            )
-
-            VALUES
-            (
-                %s,
-                %s,
-                %s,
-                CURRENT_TIMESTAMP
-            )
-
+            INSERT INTO indicadores_mercado (chave, valor, fonte, ultima_atualizacao)
+            VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
             ON CONFLICT (chave)
-
             DO UPDATE SET
                 valor = EXCLUDED.valor,
                 fonte = EXCLUDED.fonte,
                 ultima_atualizacao = CURRENT_TIMESTAMP;
-        """, (
-            chave,
-            str(valor),
-            fonte
-        ))
+        """, (chave, str(valor), fonte))
 
         conn.commit()
-
         cursor.close()
         conn.close()
 
         return jsonify({
             "sucesso": True,
-            "mensagem": "Indicador atualizado."
+            "mensagem": "Indicador updated."
         })
 
     except Exception as e:
-
         return jsonify({
             "sucesso": False,
             "erro": str(e)
@@ -313,22 +220,11 @@ def atualizar_indicadores():
 
 @app.route('/api/obter-indicadores', methods=['GET'])
 def obter_indicadores():
-
     try:
-
         conn = obter_conexao()
-
-        cursor = conn.cursor(
-            cursor_factory=RealDictCursor
-        )
-
-        cursor.execute("""
-            SELECT *
-            FROM indicadores_mercado;
-        """)
-
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute("SELECT * FROM indicadores_mercado;")
         indicadores = cursor.fetchall()
-
         cursor.close()
         conn.close()
 
@@ -338,287 +234,98 @@ def obter_indicadores():
         })
 
     except Exception as e:
-
         return jsonify({
             "sucesso": False,
             "erro": str(e)
         }), 500
 
 # ===================================
-# CALCULAR CRÉDITO
+# CALCULAR CRÉDITO (IMÓVEL E VEÍCULO)
 # ===================================
 
 @app.route('/api/calcular-credito', methods=['POST'])
 def calcular_credito():
-
     dados = request.get_json() or {}
-
     token = dados.get('token')
-    tipo_simulacao = dados.get('tipo_simulacao')
+    tipo_simulacao = dados.get('tipo_simulacao') # 'imovel' ou 'veiculo'
     banco = dados.get('banco', 'caixa').lower()
 
     if not token or not tipo_simulacao:
-
         return jsonify({
             "sucesso": False,
             "erro": "Token e tipo obrigatórios."
         }), 400
 
     try:
-
         conn = obter_conexao()
-
-        cursor = conn.cursor(
-            cursor_factory=RealDictCursor
-        )
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
 
         cursor.execute("""
-            SELECT id, creditos
-            FROM usuarios
-            WHERE token_ativo = %s
+            SELECT id, creditos FROM usuarios WHERE token_ativo = %s
         """, (token,))
-
         usuario_db = cursor.fetchone()
 
         if not usuario_db:
-
             cursor.close()
             conn.close()
-
-            return jsonify({
-                "sucesso": False,
-                "erro": "Sessão inválida."
-            }), 401
+            return jsonify({"sucesso": False, "erro": "Sessão inválida ou expirada."}), 401
 
         if usuario_db['creditos'] <= 0:
-
             cursor.close()
             conn.close()
-
-            return jsonify({
-                "sucesso": False,
-                "erro": "Sem créditos."
-            }), 402
-
-        # ===================================
-        # TAXAS BANCÁRIAS
-        # ===================================
-
-        taxas_imovel = {
-            "caixa": 0.105,
-            "itau": 0.118,
-            "bradesco": 0.122,
-            "santander": 0.119
-        }
-
-        taxas_veiculo = {
-            "caixa": 0.018,
-            "itau": 0.021,
-            "bradesco": 0.023,
-            "santander": 0.022
-        }
+            return jsonify({"sucesso": False, "erro": "Créditos insuficientes."}), 402
 
         resposta_simulacao = {}
 
-        # ===================================
-        # IMÓVEL
-        # ===================================
-
+        # 🏠 LÓGICA IMOBILIÁRIA
         if tipo_simulacao == 'imovel':
+            valor_imovel = float(dados.get('valor_imovel', 0))
+            renda_mensal = float(dados.get('renda_mensal', 0))
+            prazo_meses = int(dados.get('prazo_meses', 360))
+            tipo_imovel = dados.get('tipo_imovel', 'Residencial')
+            status_ocupacao = dados.get('status_ocupacao', 'Usado')
+            cep = dados.get('cep', '')
 
-            valor_imovel = float(
-                dados.get('valor_imovel', 0)
-            )
+            parcela_maxima = renda_mensal * 0.30
+            taxa_mensal = 0.105 / 12
+            valor_financiado = valor_imovel * 0.80
 
-            renda_mensal = float(
-                dados.get('renda_mensal', 0)
-            )
-
-            entrada = float(
-                dados.get('entrada', 0)
-            )
-
-            prazo_meses = int(
-                dados.get('prazo_meses', 360)
-            )
-
-            valor_financiado = (
-                valor_imovel - entrada
-            )
-
-            parcela_maxima = (
-                renda_mensal * 0.30
-            )
-
-            taxa_anual = taxas_imovel.get(
-                banco,
-                0.105
-            )
-
-            taxa_mensal = taxa_anual / 12
-
-            parcela_estimada = (
-                valor_financiado * taxa_mensal
-            ) / (
-                1 - (
-                    1 + taxa_mensal
-                ) ** (-prazo_meses)
-            )
-
-            aprovado = (
-                parcela_estimada <= parcela_maxima
-            )
+            parcela_estimada = (valor_financiado * taxa_mensal) / (1 - (1 + taxa_mensal)**(-prazo_meses))
+            viavel = parcela_estimada <= parcela_maxima
 
             resposta_simulacao = {
-
                 "tipo": "imovel",
-
-                "banco": banco,
-
-                "taxa_anual": round(
-                    taxa_anual * 100,
-                    2
-                ),
-
-                "valor_financiado": round(
-                    valor_financiado,
-                    2
-                ),
-
-                "parcela_estimada": round(
-                    parcela_estimada,
-                    2
-                ),
-
-                "parcela_maxima_permitida": round(
-                    parcela_maxima,
-                    2
-                ),
-
-                "aprovado_preliminar": aprovado
+                "banco_simulado": banco,
+                "tipo_imovel": tipo_imovel,
+                "status_ocupacao": status_ocupacao,
+                "cep": cep,
+                "valor_financiado": valor_financiado,
+                "parcela_estimada": round(parcela_estimada, 2),
+                "parcela_maxima_permitida": round(parcela_maxima, 2),
+                "aprovado_preliminar": viavel,
+                "motivo": "Sucesso" if viavel else "Parcela ultrapassa 30% da renda."
             }
 
-        # ===================================
-        # VEÍCULO
-        # ===================================
-
+        # 🚗 LÓGICA DE VEÍCULOS
         elif tipo_simulacao == 'veiculo':
+            valor_veiculo = float(dados.get('valor_veiculo', 0))
+            ano_veiculo = int(dados.get('ano_veiculo', 2024))
+            renda_mensal = float(dados.get('renda_mensal', 0))
+            prazo_meses = int(dados.get('prazo_meses', 60))
+            placa = dados.get('placa', '').strip().upper()
+            renavam = dados.get('renavam', '').strip()
 
-            valor_veiculo = float(
-                dados.get('valor_veiculo', 0)
-            )
+            if not placa or not renavam:
+                cursor.close()
+                conn.close()
+                return jsonify({"sucesso": False, "erro": "Placa e RENAVAM são obrigatórios para veículos."}), 400
 
-            entrada = float(
-                dados.get('entrada', 0)
-            )
+            taxa_anual = 0.14 if ano_veiculo >= 2020 else 0.19
+            taxa_mensal = taxa_anual / 12
+            valor_financiado = valor_veiculo * 0.90
 
-            renda_mensal = float(
-                dados.get('renda_mensal', 0)
-            )
-
-            prazo_meses = int(
-                dados.get('prazo_meses', 60)
-            )
-
-            valor_financiado = (
-                valor_veiculo - entrada
-            )
-
-            parcela_maxima = (
-                renda_mensal * 0.30
-            )
-
-            taxa_mensal = taxas_veiculo.get(
-                banco,
-                0.018
-            )
-
-            parcela_estimada = (
-                valor_financiado * taxa_mensal
-            ) / (
-                1 - (
-                    1 + taxa_mensal
-                ) ** (-prazo_meses)
-            )
-
-            aprovado = (
-                parcela_estimada <= parcela_maxima
-            )
+            parcela_estimada = (valor_financiado * taxa_mensal) / (1 - (1 + taxa_mensal)**(-prazo_meses))
+            parcela_maxima = renda_mensal * 0.30
+            viavel = parcela_estimada <= parcela_maxima
 
             resposta_simulacao = {
-
-                "tipo": "veiculo",
-
-                "banco": banco,
-
-                "taxa_mensal": round(
-                    taxa_mensal * 100,
-                    2
-                ),
-
-                "valor_financiado": round(
-                    valor_financiado,
-                    2
-                ),
-
-                "parcela_estimada": round(
-                    parcela_estimada,
-                    2
-                ),
-
-                "parcela_maxima_permitida": round(
-                    parcela_maxima,
-                    2
-                ),
-
-                "aprovado_preliminar": aprovado
-            }
-
-        else:
-
-            cursor.close()
-            conn.close()
-
-            return jsonify({
-                "sucesso": False,
-                "erro": "Tipo inválido."
-            }), 400
-
-        # ===================================
-        # REMOVER 1 CRÉDITO
-        # ===================================
-
-        cursor.execute("""
-            UPDATE usuarios
-            SET creditos = creditos - 1
-            WHERE id = %s
-        """, (
-            usuario_db['id'],
-        ))
-
-        conn.commit()
-
-        cursor.close()
-        conn.close()
-
-        return jsonify({
-            "sucesso": True,
-            "resultado": resposta_simulacao
-        })
-
-    except Exception as e:
-
-        return jsonify({
-            "sucesso": False,
-            "erro": str(e)
-        }), 500
-
-# ===================================
-# INICIAR SERVIDOR
-# ===================================
-
-if __name__ == '__main__':
-
-    criar_tabelas()
-
-    app.run(debug=True)
