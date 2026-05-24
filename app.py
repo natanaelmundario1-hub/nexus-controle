@@ -17,13 +17,17 @@ TOKENS_VALIDOS = {}
 # ===================================
 
 def obter_conexao():
-    return psycopg2.connect(DATABASE_URL, sslmode='require')
+    return psycopg2.connect(
+        DATABASE_URL,
+        sslmode='require'
+    )
 
 # ===================================
-# CRIAR TABELAS AUTOMATICAMENTE
+# CRIAR TABELAS
 # ===================================
 
 def criar_tabelas():
+
     try:
         conn = obter_conexao()
         cursor = conn.cursor()
@@ -51,11 +55,20 @@ def criar_tabelas():
         """)
 
         conn.commit()
+
         cursor.close()
         conn.close()
 
     except Exception as e:
         print("Erro ao criar tabelas:", e)
+
+# ===================================
+# HOME
+# ===================================
+
+@app.route('/')
+def home():
+    return render_template('index.html')
 
 # ===================================
 # WEBHOOK MAKE / TALLY
@@ -81,18 +94,33 @@ def webhook_registrar():
     creditos_iniciais = 100 if corretores == 'mais de 3' else 20
 
     try:
+
         conn = obter_conexao()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+        cursor = conn.cursor(
+            cursor_factory=RealDictCursor
+        )
 
         cursor.execute("""
             INSERT INTO usuarios
-            (email, nome, senha, plano, corretores, creditos)
+            (
+                email,
+                nome,
+                senha,
+                plano,
+                corretores,
+                creditos
+            )
+
             VALUES (%s, %s, %s, %s, %s, %s)
+
             ON CONFLICT (senha)
+
             DO UPDATE SET
                 plano = EXCLUDED.plano,
                 corretores = EXCLUDED.corretores,
                 creditos = usuarios.creditos + EXCLUDED.creditos
+
             RETURNING *;
         """, (
             email,
@@ -106,6 +134,7 @@ def webhook_registrar():
         usuario = cursor.fetchone()
 
         conn.commit()
+
         cursor.close()
         conn.close()
 
@@ -116,6 +145,7 @@ def webhook_registrar():
         })
 
     except Exception as e:
+
         return jsonify({
             "sucesso": False,
             "erro": str(e)
@@ -134,8 +164,12 @@ def login():
     senha = dados.get('senha')
 
     try:
+
         conn = obter_conexao()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+        cursor = conn.cursor(
+            cursor_factory=RealDictCursor
+        )
 
         cursor.execute(
             "SELECT * FROM usuarios WHERE senha = %s",
@@ -151,7 +185,11 @@ def login():
             TOKENS_VALIDOS[token] = usuario
 
             cursor.execute(
-                "UPDATE usuarios SET token_ativo = %s WHERE senha = %s",
+                """
+                UPDATE usuarios
+                SET token_ativo = %s
+                WHERE senha = %s
+                """,
                 (token, usuario)
             )
 
@@ -168,6 +206,7 @@ def login():
             })
 
         else:
+
             cursor.close()
             conn.close()
 
@@ -177,268 +216,11 @@ def login():
             }), 401
 
     except Exception as e:
+
         return jsonify({
             "sucesso": False,
             "erro": str(e)
         }), 500
-
-# ===================================
-# ATUALIZAR CRÉDITOS
-# ===================================
-
-@app.route('/api/atualizar-creditos', methods=['POST'])
-def atualizar_creditos():
-
-    dados = request.get_json() or {}
-
-    email = dados.get('email')
-    quantidade = int(dados.get('creditos', 0))
-    operacao = dados.get('operacao', 'adicionar')
-
-    try:
-        conn = obter_conexao()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-
-        if operacao == 'remover':
-            quantidade = -abs(quantidade)
-
-        cursor.execute("""
-            UPDATE usuarios
-            SET creditos = GREATEST(0, creditos + %s)
-            WHERE email = %s
-            RETURNING creditos;
-        """, (quantidade, email))
-
-        resultado = cursor.fetchone()
-
-        conn.commit()
-        cursor.close()
-        conn.close()
-
-        return jsonify({
-            "sucesso": True,
-            "novos_creditos": resultado['creditos']
-        })
-
-    except Exception as e:
-        return jsonify({
-            "sucesso": False,
-            "erro": str(e)
-        }), 500
-
-# ===================================
-# ATUALIZAR INDICADORES
-# ===================================
-
-@app.route('/api/atualizar-indicadores', methods=['POST'])
-def atualizar_indicadores():
-
-    dados = request.get_json() or {}
-
-    chave = dados.get('chave')
-    valor = dados.get('valor')
-    fonte = dados.get('fonte')
-
-    try:
-        conn = obter_conexao()
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            INSERT INTO indicadores_mercado
-            (chave, valor, fonte, ultima_atualizacao)
-            VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
-
-            ON CONFLICT (chave)
-            DO UPDATE SET
-                valor = EXCLUDED.valor,
-                fonte = EXCLUDED.fonte,
-                ultima_atualizacao = CURRENT_TIMESTAMP;
-        """, (
-            chave,
-            str(valor),
-            fonte
-        ))
-
-        conn.commit()
-        cursor.close()
-        conn.close()
-
-        return jsonify({
-            "sucesso": True,
-            "mensagem": "Indicador atualizado."
-        })
-
-    except Exception as e:
-        return jsonify({
-            "sucesso": False,
-            "erro": str(e)
-        }), 500
-
-# ===================================
-# OBTER INDICADORES
-# ===================================
-
-@app.route('/api/obter-indicadores', methods=['GET'])
-def obter_indicadores():
-
-    try:
-        conn = obter_conexao()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-
-        cursor.execute("SELECT * FROM indicadores_mercado;")
-
-        indicadores = cursor.fetchall()
-
-        cursor.close()
-        conn.close()
-
-        return jsonify({
-            "sucesso": True,
-            "indicadores": indicadores
-        })
-
-    except Exception as e:
-        return jsonify({
-            "sucesso": False,
-            "erro": str(e)
-        }), 500
-
-# ===================================
-# CALCULAR CRÉDITO
-# ===================================
-
-@app.route('/api/calcular-credito', methods=['POST'])
-def calcular_credito():
-
-    dados = request.get_json() or {}
-
-    token = dados.get('token')
-
-    usuario_valido = None
-
-    if token in TOKENS_VALIDOS:
-        usuario_valido = TOKENS_VALIDOS[token]
-
-    else:
-        try:
-            conn = obter_conexao()
-            cursor = conn.cursor(cursor_factory=RealDictCursor)
-
-            cursor.execute("""
-                SELECT senha, creditos
-                FROM usuarios
-                WHERE token_ativo = %s
-            """, (token,))
-
-            usuario_db = cursor.fetchone()
-
-            if usuario_db:
-
-                usuario_valido = usuario_db['senha']
-
-                TOKENS_VALIDOS[token] = usuario_valido
-
-                if usuario_db['creditos'] <= 0:
-
-                    cursor.close()
-                    conn.close()
-
-                    return jsonify({
-                        "erro": "Créditos esgotados."
-                    }), 403
-
-            cursor.close()
-            conn.close()
-
-        except Exception as e:
-            return jsonify({
-                "erro": str(e)
-            }), 500
-
-    if not usuario_valido:
-        return jsonify({
-            "erro": "Sessão inválida."
-        }), 401
-
-    # CONSUMIR 1 CRÉDITO
-
-    try:
-        conn = obter_conexao()
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            UPDATE usuarios
-            SET creditos = GREATEST(0, creditos - 1)
-            WHERE senha = %s
-        """, (usuario_valido,))
-
-        conn.commit()
-
-        cursor.close()
-        conn.close()
-
-    except Exception as e:
-        return jsonify({
-            "erro": str(e)
-        }), 500
-
-    # DADOS DA SIMULAÇÃO
-
-    valor_imovel = float(dados.get('valorImovel', 0))
-    renda_bruta = float(dados.get('rendaBruta', 0))
-    renda_informal = float(dados.get('rendaInformal', 0))
-    entrada = float(dados.get('valorEntrada', 0))
-    fgts = float(dados.get('valorFgts', 0))
-    prazo_meses = int(dados.get('prazoMeses', 360))
-    taxa_juros = float(dados.get('taxaJuros', 9.5))
-
-    renda_total = renda_bruta + renda_informal
-
-    valor_financiar = valor_imovel - entrada - fgts
-
-    if valor_financiar <= 0:
-        return jsonify({
-            "mensagem": "Não há valor restante para financiar."
-        })
-
-    taxa_mensal = (taxa_juros / 100) / 12
-
-    amortizacao = valor_financiar / prazo_meses
-
-    juros = valor_financiar * taxa_mensal
-
-    primeira_parcela = amortizacao + juros
-
-    comprometimento = renda_total * 0.30
-
-    if primeira_parcela <= comprometimento:
-
-        mensagem = (
-            f"🛡️ CERTIFICADO DE VIABILIDADE APROVADO | "
-            f"Valor financiado: R$ {valor_financiar:,.2f} | "
-            f"Primeira parcela: R$ {primeira_parcela:,.2f} | "
-            f"Limite de renda: R$ {comprometimento:,.2f}"
-        )
-
-    else:
-
-        mensagem = (
-            f"⚠️ CRÉDITO NÃO RECOMENDADO | "
-            f"Parcela estimada: R$ {primeira_parcela:,.2f} | "
-            f"Limite máximo: R$ {comprometimento:,.2f}"
-        )
-
-    return jsonify({
-        "mensagem": mensagem
-    })
-
-# ===================================
-# HOME
-# ===================================
-
-@app.route('/')
-def home():
-    return render_template('index.html')
 
 # ===================================
 # INICIAR SERVIDOR
