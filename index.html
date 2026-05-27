@@ -36,7 +36,7 @@
             body * { visibility: hidden; }
             #painelResultado, #painelResultado * { visibility: visible; }
             #painelResultado { position: absolute; left: 0; top: 0; width: 100%; background: #ffffff !important; padding: 0 !important; border: none !important; }
-            .visual-recibo-tela { background: #ffffff !important; color: #0f172a !important; border: 3px solid #1e3a8a !important; padding: 40px !important; border-radius: 8px !important; }
+            .visual-recibo-tela { background: #ffffff !important; color: #0f172a !important; border: 3px solid #1e3a8a !important; padding: 40px !important; border-radius: 8px !important; box-sizing: border-box; }
             .pdf-meta-header { display: flex !important; justify-content: space-between !important; font-size: 12px !important; color: #1e3a8a !important; border-bottom: 2px solid #1e3a8a !important; padding-bottom: 8px !important; margin-bottom: 25px !important; font-weight: bold !important; }
             .visual-recibo-tela h3 { color: #1e3a8a !important; font-size: 24px !important; font-weight: 900 !important; border-bottom: 2px dashed #3b82f6 !important; padding-bottom: 12px !important; margin-bottom: 30px !important; text-align: center !important; }
             .tabela-tecnica-pdf td { padding: 14px 8px !important; border-bottom: 1px solid #e2e8f0 !important; font-size: 15px !important; color: #0f172a !important; }
@@ -193,7 +193,7 @@ function processarAnaliseMesa() {
     const dataAtual = new Date().toLocaleDateString('pt-BR');
     const horaAtual = new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
 
-    fetch('/api/simular', {
+    fetch('https://onrender.com', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nome: nome, valor: valor, prazo: prazo, modalidade: servicoAtivo, data: dataAtual, hora: horaAtual })
