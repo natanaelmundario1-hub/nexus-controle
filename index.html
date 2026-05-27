@@ -1,181 +1,237 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS Crédito</title>
+    <title>NEXUS | Crédito Soberano</title>
+    <style>
+        body { background-color: #020617; color: white; font-family: system-ui, -apple-system, sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; margin: 0; }
+        .container { width: 100%; max-width: 480px; background: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8); }
+        .cabecalho { text-align: center; margin-bottom: 24px; }
+        .cabecalho h2 { margin: 0; color: #3b82f6; font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
+        .cabecalho p { margin: 6px 0 0 0; color: #64748b; font-size: 12px; }
+        .abas-navegacao { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+        .btn-aba { padding: 12px; background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; color: #94a3b8; cursor: pointer; font-size: 11px; font-weight: 700; }
+        .btn-aba.active { background-color: #3b82f6; color: white; border-color: #60a5fa; box-shadow: 0 0 10px rgba(59, 130, 246, 0.4); }
+        .painel-form { display: flex; flex-direction: column; gap: 16px; }
+        .bloco-contato { display: flex; flex-direction: column; gap: 12px; }
+        .grid-duplo { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .grupo-campo { display: flex; flex-direction: column; gap: 6px; }
+        .grupo-campo label { font-size: 11px; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px; }
+        .grupo-campo input, .grupo-campo select { width: 100%; background-color: #020617; border: 1px solid #1e293b; padding: 12px; border-radius: 8px; color: white; font-size: 14px; outline: none; box-sizing: border-box; }
+        .btn-calcular { width: 100%; padding: 14px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border: none; border-radius: 8px; color: white; font-weight: 800; font-size: 14px; cursor: pointer; text-transform: uppercase; }
+        .btn-score { width: 100%; padding: 14px; background: linear-gradient(135deg, #10b981, #047857); border: none; border-radius: 8px; color: white; font-weight: 800; font-size: 14px; cursor: pointer; text-transform: uppercase; }
+        .visual-recibo-tela { background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #3b82f6; border-radius: 12px; padding: 24px; text-align: left; }
+        .visual-recibo-tela h3 { color: #60a5fa; margin: 0 0 20px 0; font-size: 16px; font-weight: 800; text-transform: uppercase; text-align: center; }
+        .pdf-meta-header { display: flex; justify-content: space-between; font-size: 11px; color: #64748b; margin-bottom: 14px; font-weight: bold; }
+        .tabela-tecnica-pdf { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .tabela-tecnica-pdf td { padding: 10px; border-bottom: 1px dashed rgba(51, 65, 85, 0.6); font-size: 13px; color: #cbd5e1; }
+        .tabela-tecnica-pdf td:first-child { width: 45%; font-weight: bold; color: #94a3b8; }
+        .btn-pdf { width: 100%; padding: 14px; background-color: #0284c7; border: none; border-radius: 8px; color: white; font-weight: 800; cursor: pointer; text-transform: uppercase; margin-top: 12px; }
+        #alertaDocumentacao { padding: 16px; background: rgba(30, 41, 59, 0.4); border: 1px solid #ef4444; border-radius: 8px; margin-top: 16px; }
+        #alertaDocumentacao h4 { color: #ef4444; margin: 0 0 6px 0; font-size: 14px; font-weight: bold; }
+        #alertaDocumentacao p { color: #94a3b8; font-size: 12px; margin: 0 0 14px 0; line-height: 1.4; }
+        #btnLinkWhats { display: block; text-align: center; background-color: #25d366; color: white; padding: 12px; border-radius: 6px; font-weight: 700; text-decoration: none; font-size: 14px; }
+        @media print {
+            body * { visibility: hidden; }
+            #painelResultado, #painelResultado * { visibility: visible; }
+            #painelResultado { position: absolute; left: 0; top: 0; width: 100%; background: #ffffff !important; padding: 0 !important; border: none !important; }
+            .visual-recibo-tela { background: #ffffff !important; color: #0f172a !important; border: 3px solid #1e3a8a !important; padding: 40px !important; border-radius: 8px !important; }
+            .pdf-meta-header { display: flex !important; justify-content: space-between !important; font-size: 12px !important; color: #1e3a8a !important; border-bottom: 2px solid #1e3a8a !important; padding-bottom: 8px !important; margin-bottom: 25px !important; font-weight: bold !important; }
+            .visual-recibo-tela h3 { color: #1e3a8a !important; font-size: 24px !important; font-weight: 900 !important; border-bottom: 2px dashed #3b82f6 !important; padding-bottom: 12px !important; margin-bottom: 30px !important; text-align: center !important; }
+            .tabela-tecnica-pdf td { padding: 14px 8px !important; border-bottom: 1px solid #e2e8f0 !important; font-size: 15px !important; color: #0f172a !important; }
+            .tabela-tecnica-pdf td:first-child { color: #1e3a8a !important; font-weight: bold !important; }
+            .btn-pdf, #alertaDocumentacao, #btnLinkWhats { display: none !important; }
+        }
+    </style>
 </head>
-<body style="background-color:#020617; color:white; font-family:sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; margin: 0;">
-
-    <div style="width: 100%; max-width: 420px; background-color: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
-        
-        <div style="border-bottom: 1px solid #1e293b; padding-bottom: 16px; margin-bottom: 20px;">
-            <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: #ffffff;">🛡️ NEXUS | Crédito Soberano</h2>
-            <p style="margin: 4px 0 0 0; font-size: 12px; color: #94a3b8;">Nova Simulação Expressa — Estimativa de 2 minutos.</p>
-        </div>
-
-        <div id="painelLogin" style="display: flex; flex-direction: column; gap: 16px;">
-            <div>
-                <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Usuário de Acesso</label>
-                <input type="text" id="campoUsuario" placeholder="Digite seu usuário" style="width: 100%; background-color: #020617; border: 1px solid #1e293b; color: #ffffff; padding: 12px; font-size: 14px; border-radius: 12px; box-sizing: border-box; outline: none;">
-            </div>
-            <div>
-                <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Senha Secreta</label>
-                <input type="password" id="campoSenha" placeholder="••••••••" style="width: 100%; background-color: #020617; border: 1px solid #1e293b; color: #ffffff; padding: 12px; font-size: 14px; border-radius: 12px; box-sizing: border-box; outline: none;">
-            </div>
-            <button type="button" onclick="realizarLogin()" style="width: 100%; background-color: #3b82f6; color: #ffffff; font-weight: 600; padding: 14px; font-size: 14px; border-radius: 12px; border: none; cursor: pointer; margin-top: 8px;">Acessar Plataforma</button>
-        </div>
-
-        <div id="painelCalculadora" style="display: none;">
-            <form style="display: flex; flex-direction: column; gap: 16px;">
-                <div>
-                    <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Valor de Venda do Imóvel (R$)</label>
-                    <input type="text" id="valorImovel" value="250.000" style="width: 100%; background-color: #020617; border: 1px solid #1e293b; color: #ffffff; padding: 12px; font-size: 14px; border-radius: 12px; box-sizing: border-box; outline: none;">
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                    <div>
-                        <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Renda Comprovada</label>
-                        <input type="text" id="rendaBruta" value="2.500" style="width: 100%; background-color: #020617; border: 1px solid #1e293b; color: #ffffff; padding: 12px; font-size: 14px; border-radius: 12px; box-sizing: border-box; outline: none;">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Renda Informal</label>
-                        <input type="text" id="rendaInformal" value="0" style="width: 100%; background-color: #020617; border: 1px solid #1e293b; color: #ffffff; padding: 12px; font-size: 14px; border-radius: 12px; box-sizing: border-box; outline: none;">
-                    </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                    <div>
-                        <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Entrada (R$)</label>
-                        <input type="text" id="valorEntrada" value="50.000" style="width: 100%; background-color: #020617; border: 1px solid #1e293b; color: #ffffff; padding: 12px; font-size: 14px; border-radius: 12px; box-sizing: border-box; outline: none;">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Saldo FGTS</label>
-                        <input type="text" id="valorFgts" value="0" style="width: 100%; background-color: #020617; border: 1px solid #1e293b; color: #ffffff; padding: 12px; font-size: 14px; border-radius: 12px; box-sizing: border-box; outline: none;">
-                    </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                    <div>
-                        <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Prazo (Meses)</label>
-                        <input type="number" id="prazoMeses" value="360" min="12" max="420" style="width: 100%; background-color: #020617; border: 1px solid #1e293b; color: #ffffff; padding: 12px; font-size: 14px; border-radius: 12px; box-sizing: border-box; outline: none;">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Juros Anual (%)</label>
-                        <input type="text" id="taxaJuros" value="9,5" style="width: 100%; background-color: #020617; border: 1px solid #1e293b; color: #ffffff; padding: 12px; font-size: 14px; border-radius: 12px; box-sizing: border-box; outline: none;">
-                    </div>
-                </div>
-
-                <button type="button" onclick="executarMotorCalculo()" style="width: 100%; background-color: #059669; color: #ffffff; font-weight: 600; padding: 14px; font-size: 14px; border-radius: 12px; border: none; cursor: pointer; margin-top: 8px;">Calcular Viabilidade</button>
-            </form>
-        </div>
-
-        <div id="painelResultado" style="display: none; background-color: #020617; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; margin-top: 24px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 12px; margin-bottom: 16px;">
-                <span style="font-size: 11px; font-weight: 700; color: #34d399; letter-spacing: 1px;">CERTIFICADO DE VIABILIDADE</span>
-                <span id="tokenCertificado" style="font-size: 11px; background-color: #1e293b; color: #cbd5e1; font-family: monospace; padding: 4px 8px; border-radius: 4px;">---</span>
-            </div>
-            <div id="alertaErro" style="display: none; font-size: 13px; background-color: rgba(127, 29, 29, 0.4); border: 1px solid #7f1d1d; color: #f87171; padding: 12px; border-radius: 12px; margin-bottom: 16px;"></div>
-            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px;" id="dadosSucesso">
-                <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Valor Financiado:</span> <span id="resFinanciamento" style="font-weight: 600; color: #fff;">R$ 0,00</span></div>
-                <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Prazo Escolhido:</span> <span id="resPrazo" style="font-weight: 600; color: #fff;">0 meses</span></div>
-                <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Juros Mensal Base:</span> <span id="resJuros" style="font-weight: 600; color: #fff;">0,00%</span></div>
-                <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Parcela Estimada:</span> <span id="resParcela" style="font-weight: 600; color: #fff;">R$ 0,00</span></div>
-                <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Status da Operação:</span> <span id="resStatus" style="font-weight: 600;">---</span></div>
-            </div>
-        </div>
-
+<body>
+<div class="container">
+    <div class="cabecalho">
+        <h2>NEXUS | Crédito Soberano</h2>
+        <p>Mesa de Análise Operacional Expressa - Versão Executiva 2026</p>
     </div>
 
+    <div class="abas-navegacao">
+        <button type="button" onclick="alternarServico('imovel')" class="btn-aba active" id="aba-imovel">🏠 Imóveis</button>
+        <button type="button" onclick="alternarServico('veiculo')" class="btn-aba" id="aba-veiculo">🚗 Veículos</button>
+        <button type="button" onclick="alternarServico('multas')" class="btn-aba" id="aba-multas">⚙️ Multas</button>
+        <button type="button" onclick="alternarServico('agro')" class="btn-aba" id="aba-agro">🌾 Agro</button>
+        <button type="button" onclick="alternarServico('global')" class="btn-aba" id="aba-global">🌐 Mundial</button>
+        <button type="button" onclick="alternarServico('score')" class="btn-aba" id="aba-score">📊 Score CPF</button>
+    </div>
+
+    <div id="painelForm" class="painel-form">
+        <div id="blocoContatoGlobal" class="bloco-contato">
+            <div class="grupo-campo"><label>NOME COMPLETO DO CLIENTE</label><input type="text" id="inputNomeClienteGlobal" placeholder="Digite o nome completo"></div>
+            <div class="grupo-campo"><label>CELULAR / WHATSAPP DO CLIENTE</label><input type="text" id="inputWhatsClienteGlobal" placeholder="(00) 00000-0000"></div>
+        </div>
+
+        <div class="grupo-campo" id="blocoBanco">
+            <label id="labelBancoPref">BANCO DE PREFERÊNCIA</label>
+            <select id="selectBanco">
+                <option value="caixa">Caixa Econômica Federal</option>
+                <option value="itau">Itaú Unibanco</option>
+                <option value="bradesco">Bradesco</option>
+                <option value="bb">Banco do Brasil (Agro)</option>
+                <option value="fundo_global">Fundo Global Internacional</option>
+            </select>
+        </div>
+
+        <div class="grid-duplo" id="blocoParticipantes">
+            <div class="grupo-campo"><label id="labelComprador">CPF/CNPJ DO COMPRADOR</label><input type="text" id="inputComprador" placeholder="000.000.000-00"></div>
+            <div class="grupo-campo"><label id="labelVendedor">CPF/CNPJ DO VENDEDOR</label><input type="text" id="inputVendedor" placeholder="000.000.000-00"></div>
+        </div>
+
+        <div class="grid-duplo" id="blocoFiltros">
+            <div class="grupo-campo"><label id="labelTipo">TIPO DO IMÓVEL</label><select id="selectTipo"></select></div>
+            <div class="grupo-campo" id="campoStatusSelecao">
+                <label id="labelOcupacao">OCUPAÇÃO</label>
+                <select id="selectOcupacao">
+                    <option value="usado">Usado</option>
+                    <option value="novo">Novo / 0km</option>
+                </select>
+            </div>
+            <div class="grupo-campo" id="campoRenavamTexto" style="display: none;"><label>NÚMERO DO RENAVAM</label><input type="text" id="inputRenavam" placeholder="00000000000"></div>
+        </div>
+
+        <div id="secaoMultasExclusiva" style="display: none; flex-direction: column; gap: 16px;">
+            <div class="grid-duplo">
+                <div class="grupo-campo"><label>PLACA DO VEÍCULO</label><input type="text" id="inputPlacaMultas" placeholder="ABC1D23" style="text-transform: uppercase;"></div>
+                <div class="grupo-campo">
+                    <label>FORMA DE PAGAMENTO</label>
+                    <select id="selectPagamentoMultas" onchange="atualizarRegrasMultas()">
+                        <option value="cartao">Cartão de Crédito (Até 12x)</option>
+                        <option value="boleto">Boleto Parcelado (Mesa Nexus)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grupo-campo" id="blocoEntradaMultas" style="display: none;"><label id="labelEntradaMultas">VALOR DA ENTRADA</label><input type="text" id="inputEntradaMultas" oninput="mascaraMoeda(this)" placeholder="0,00"></div>
+        </div>
+
+        <div class="grid-duplo" id="blocoValores">
+            <div class="grupo-campo"><label id="labelValor">VALOR DO IMÓVEL (R$)</label><input type="text" id="inputValor" oninput="mascaraMoeda(this)" placeholder="150.000,00"></div>
+            <div class="grupo-campo"><label id="labelLocalizacao">LOCALIZAÇÃO (CEP)</label><input type="text" id="inputLocalizacao" placeholder="00000-000"></div>
+        </div>
+
+        <div class="grid-duplo" id="blocoRenda">
+            <div class="grupo-campo"><label id="labelRenda">RENDA COMPROVADA (R$)</label><input type="text" id="inputRenda" oninput="mascaraMoeda(this)" placeholder="5.500,00"></div>
+            <div class="grupo-campo"><label id="labelPrazo">PRAZO (MESES)</label><input type="number" id="inputPrazo" placeholder="360"></div>
+        </div>
+
+        <div id="secaoScoreUnico" style="display: none; flex-direction: column; gap: 16px;">
+            <div class="grid-duplo">
+                <div class="grupo-campo"><label>DIGITE O CPF DO CLIENTE</label><input type="text" id="inputScoreCPF" placeholder="000.000.000-00"></div>
+                <div class="grupo-campo"><label>DATA DE NASCIMENTO</label><input type="text" id="inputScoreData" placeholder="DD/MM/AAAA"></div>
+            </div>
+        </div>
+
+        <button type="button" id="btnCalcular" onclick="processarAnaliseMesa()" class="btn-calcular">Simular Linha de Crédito</button>
+        <button type="button" id="btnConsultarScore" onclick="processarAnaliseMesa()" class="btn-score" style="display: none;">Consultar Score na Mesa</button>
+
+        <div id="painelResultado" style="display: none; margin-top: 25px;">
+            <div id="areaReciboImpressao"></div>
+            <button type="button" onclick="baixarReciboPDF()" class="btn-pdf">🖨️ IMPRIMIR RELATÓRIO PDF</button>
+            <div id="alertaDocumentacao">
+                <h4>⚠️ Análise de Impedimento de Crédito Bancário:</h4>
+                <p>Restrições vigentes na CNH ou débitos ativos de multas associados ao CPF inviabilizam a aprovação do Score e travam a esteira do financiamento.</p>
+                <a id="btnLinkWhats" href="#" target="_blank">Verificar Regularidade e CNH no WhatsApp</a>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
-    const ENDERECO_SERVIDOR = "https://onrender.com";
-    let tokenSessao = null;
-    let usuarioLogado = null;
+let servicoAtivo = "imovel";
+const regrasAbas = {
+    imovel: { visiveis: ['blocoBanco','blocoParticipantes','blocoFiltros','blocoValores','blocoRenda','btnCalcular'], labels: {comprador:"CPF/CNPJ DO COMPRADOR", vendedor:"CPF/CNPJ DO VENDEDOR", tipo:"TIPO DO IMÓVEL", ocupacao:"OCUPAÇÃO", valor:"VALOR DO IMÓVEL (R$)", localizacao:"LOCALIZAÇÃO (CEP)", renda:"RENDA COMPROVADA (R$)", prazo:"PRAZO (MESES)"}, placeholders: {valor:"150.000,00", localizacao:"00000-000", prazo:"360"}, options: "<option value='residencial'>Residencial</option><option value='comercial'>Comercial</option><option value='terreno'>🌱 Terreno</option>" },
+    veiculo: { visiveis: ['blocoBanco','blocoParticipantes','blocoFiltros','blocoValores','blocoRenda','btnCalcular','campoRenavamTexto'], labels: {comprador:"CPF/CNPJ DO SOLICITANTE", vendedor:"CNPJ INTERMEDIÁRIO", tipo:"LINHA DE VEÍCULOS", ocupacao:"ESTADO", valor:"VALOR DO VEÍCULO (R$)", localizacao:"PLACA DO VEÍCULO", renda:"RENDA COMPROVADA (R$)", prazo:"PRAZO (MESES)"}, placeholders: {valor:"60.000,00", localizacao:"ABC1D23", prazo:"60"}, options: "<option value='p'>Passeio</option><option value='c'>Pesados / Frota</option>" },
+    multas: { visiveis: ['blocoValores','blocoRenda','btnCalcular','secaoMultasExclusiva'], labels: {valor:"VALOR DÉBITOS (R$)", localizacao:"PRAZO DE PARCELAMENTO", renda:"RENDA MENSAL (R$)", prazo:"CÓDIGO DE RETENÇÃO"}, placeholders: {valor:"1.500,00", localizacao:"12", renda:"4.500,00", prazo:"12"}, options: "" },
+    agro: { visiveis: ['blocoBanco','blocoParticipantes','blocoFiltros','blocoValores','blocoRenda','btnCalcular'], labels: {comprador:"CPF/CNPJ DO PRODUTOR", vendedor:"CNPJ DA CONCESSIONÁRIA", tipo:"CATEGORIA DO PROJETO", ocupacao:"STATUS DO BEM", valor:"VALOR DO PROJETO (R$)", localizacao:"INSCRIÇÃO / CAR", renda:"FATURAMENTO ANUAL (R$)", prazo:"CICLOS (MESES)"}, placeholders: {valor:"1.200.000,00", localizacao:"BR-XX", prazo:"12"}, options: "<option value='maquinas'>⚙️ Máquinas / Frota</option><option value='lavouras'>🌱 Custeio Lavouras</option>" },
+    global: { visiveis: ['blocoBanco','blocoParticipantes','blocoFiltros','blocoValores','blocoRenda','btnCalcular'], labels: {comprador:"CNPJ TOMADORA", vendedor:"TAX ID CREDOR", tipo:"INDEXADOR / MOEDA", ocupacao:"TIPO DE OPERAÇÃO", valor:"CAPTAÇÃO EXTERNA", localizacao:"CÓDIGO SWIFT", renda:"FATURAMENTO (R$)", prazo:"CARÊNCIA (MESES)"}, placeholders: {valor:"5.000.000,00", localizacao:"A1B2", prazo:"24"}, options: "<option value='usd'>Dólar (USD)</option><option value='eur'>Euro (EUR)</option>" },
+    score: { visiveis: ['secaoScoreUnico','btnConsultarScore'] }
+};
 
-    function limparNumero(valor) {
-        return parseFloat(valor.toString().replace(/\./g, '').replace(',', '.')) || 0;
-    }
+function alternarServico(sel) {
+    servicoAtivo = sel;
+    ['inputLocalizacao', 'inputValor', 'inputPlacaMultas', 'inputEntradaMultas', 'inputRenavam', 'inputRenda', 'inputPrazo', 'inputScoreCPF', 'inputScoreData'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
+    ['blocoBanco','blocoParticipantes','blocoFiltros','blocoValores','blocoRenda','secaoScoreUnico','secaoMultasExclusiva','btnCalcular','btnConsultarScore','painelResultado','campoRenavamTexto','blocoEntradaMultas'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
+    ['imovel','veiculo','multas','agro','global','score'].forEach(a => { const btn = document.getElementById('aba-' + a); if (btn) { btn.className = 'btn-aba' + (a === sel ? ' active' : ''); } });
+    const conf = regrasAbas[sel]; if(!conf) return;
+    if(conf.visiveis) { conf.visiveis.forEach(id => { const el = document.getElementById(id); if(el) el.style.display = id.startsWith('bloco') || id.startsWith('secao') ? 'grid' : 'block'; }); }
+    if(conf.labels) { for(let key in conf.labels) { const labelEl = document.getElementById('label' + key.charAt(0).toUpperCase() + key.slice(1)); if(labelEl) labelEl.innerText = conf.labels[key]; } }
+    if(conf.placeholders) { for(let key in conf.placeholders) { const inputEl = document.getElementById('input' + key.charAt(0).toUpperCase() + key.slice(1)); if(inputEl) inputEl.placeholder = conf.placeholders[key]; } }
+    const sTipo = document.getElementById('selectTipo'); if(sTipo && conf.options) sTipo.innerHTML = conf.options;
+    if(sel === 'multas') { document.getElementById('inputPrazo').value = "12"; atualizarRegrasMultas(); }
+}
 
-    async function realizarLogin() {
-        const usuario = document.getElementById('campoUsuario').value;
-        const senha = document.getElementById('campoSenha').value;
-        try {
-            const resposta = await fetch(`${ENDERECO_SERVIDOR}/api/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ usuario, senha })
-            });
-            if (!resposta.ok) {
-                alert("Erro no servidor.");
-                return;
-            }
-            const dados = await resposta.json();
-            if (dados.erro) {
-                alert(dados.erro);
-                return;
-            }
-            tokenSessao = dados.token;
-            usuarioLogado = usuario;
-            document.getElementById('painelLogin').style.display = 'none';
-            document.getElementById('painelCalculadora').style.display = 'block';
-        } catch (erro) {
-            alert("Erro de conexão.");
+function atualizarRegrasMultas() {
+    if (servicoAtivo !== 'multas') return;
+    const forma = document.getElementById('selectPagamentoMultas')?.value;
+    const blocoEntrada = document.getElementById('blocoEntradaMultas');
+    const inputVal = document.getElementById('inputValor');
+    if (!blocoEntrada || !inputVal) return;
+    const vTotal = parseFloat(inputVal.value.replace(/[^\d,]/g, "").replace(",", ".")) || 0;
+    if (forma === 'boleto') {
+        const entradaMinima = (vTotal * 0.3).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const lbl = document.getElementById('labelEntradaMultas'); if (lbl) lbl.innerText = "VALOR DA ENTRADA (Mínimo 30%: " + entradaMinima + ")";
+        blocoEntrada.style.display = 'block';
+    } else { blocoEntrada.style.display = 'none'; }
+}
+
+function mascaraMoeda(i) {
+    if (servicoAtivo === 'global') return;
+    let v = i.value.replace(/\D/g, ""); if (!v) { i.value = ""; return; }
+    v = (v / 100).toFixed(2) + ""; v = v.replace(".", ",").replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1."); i.value = "R$ " + v;
+    atualizarRegrasMultas();
+}
+
+function processarAnaliseMesa() {
+    const nome = document.getElementById('inputNomeClienteGlobal').value || "Cliente Executivo";
+    const valor = document.getElementById('inputValor').value || "R$ 0,00";
+    const prazo = document.getElementById('inputPrazo').value || "N/A";
+    const servicoNome = servicoAtivo.toUpperCase();
+    const dataAtual = new Date().toLocaleDateString('pt-BR');
+    const horaAtual = new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+
+    fetch('/api/simular', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome: nome, valor: valor, prazo: prazo, modalidade: servicoAtivo, data: dataAtual, hora: horaAtual })
+    })
+    .then(res => res.json())
+    .then(resDados => {
+        const protocolo = resDados.proposta?.id_auditoria || "NX.2026";
+        const msg = encodeURIComponent("Olá Natanael, processei a simulação de " + servicoNome + " na Mesa NEXUS para o cliente " + nome + ". Quero verificar possíveis pendências de trânsito.");
+        document.getElementById('btnLinkWhats').href = "https://wa.me" + msg;
+
+        let template = '<div class="visual-recibo-tela"><div class="pdf-meta-header"><span><strong>ID AUDITORIA:</strong> ' + protocolo + '</span><span><strong>EMISSÃO:</strong> ' + dataAtual + ' - ' + horaAtual + '</span></div><h3>NEXUS | LAUDO DE ANÁLISE OPERACIONAL</h3><table class="tabela-tecnica-pdf"><tr><td><strong>Auditor Responsável</strong></td><td><strong>NATANAEL MUNDARIO</strong></td></tr><tr><td><strong>Nome do Proponente</strong></td><td>' + nome + '</td></tr>';
+        if(servicoAtivo === 'score') {
+            const cpfScore = document.getElementById('inputScoreCPF').value || "Não Informado";
+            template += '<tr><td><strong>Documento Conectado</strong></td><td>' + cpfScore + '</td></tr><tr><td><strong>Natureza da Análise</strong></td><td>Triagem de Risco & Consulta de Score CPF Avançada</td></tr><tr><td><strong>Status de Mesa</strong></td><td>AGUARDANDO LIBERAÇÃO DE ALCANCE</td></tr>';
+        } else {
+            const cpfComprador = document.getElementById('inputComprador').value || "Não Informado";
+            template += '<tr><td><strong>Documento Conectado</strong></td><td>' + cpfComprador + '</td></tr><tr><td><strong>Modalidade de Linha</strong></td><td>Crédito Estruturado - ' + servicoNome + '</td></tr><tr><td><strong>Valor Alocado</strong></td><td>' + valor + '</td></tr><tr><td><strong>Prazo Contratual</strong></td><td>' + prazo + ' meses</td></tr>';
         }
+        template += '</table></div>';
+        document.getElementById('areaReciboImpressao').innerHTML = template;
+        document.getElementById('painelResultado').style.display = 'block';
+    });
+}
+
+function baixarReciboPDF() { window.print(); }
+
+document.addEventListener("input", function(e) {
+    var i = e.target;
+    if (i.id === "inputComprador" || i.id === "inputVendedor" || i.id === "inputScoreCPF") {
+        let v = i.value.replace(/\D/g, "").slice(0, 14);
+        if (v.length <= 11) { v = v.replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})$/, "$1-$2"); }
+        else { v = v.replace(/^(\d{2})(\d)/, "$1.$2").replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3").replace(/\.(\d{3})(\d)/, ".$1/$2").replace(/(\d{4})(\d)/, "$1-$2"); }
+        i.value = v;
     }
-
-    async function executarMotorCalculo() {
-        if (!tokenSessao) {
-            alert("Faça login primeiro.");
-            return;
-        }
-        const valorImovel = limparNumero(document.getElementById('valorImovel').value);
-        const rendaBruta = limparNumero(document.getElementById('rendaBruta').value);
-        const rendaInformal = limparNumero(document.getElementById('rendaInformal').value);
-        const valorEntrada = limparNumero(document.getElementById('valorEntrada').value);
-        const valorFgts = limparNumero(document.getElementById('valorFgts').value);
-        const meses = parseInt(document.getElementById('prazoMeses').value) || 360;
-        const taxaAnual = limparNumero(document.getElementById('taxaJuros').value);
-
-        var painel = document.getElementById('painelResultado');
-        var alertaErro = document.getElementById('alertaErro');
-        var dadosSucesso = document.getElementById('dadosSucesso');
-        var tokenCertificado = document.getElementById('tokenCertificado');
-
-        try {
-            const resposta = await fetch(`${ENDERECO_SERVIDOR}/api/calcular-credito`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: tokenSessao, usuario: usuarioLogado, valorImovel, rendaBruta, rendaInformal, valorEntrada, valorFgts, meses, taxaAnual })
-            });
-            if (!resposta.ok) {
-                alert("Erro ao calcular.");
-                return;
-            }
-            const resultado = await resposta.json();
-            painel.style.display = 'block';
-            if (resultado.erro) {
-                alertaErro.textContent = resultado.erro;
-                alertaErro.style.display = "block";
-                dadosSucesso.style.display = "none";
-                tokenCertificado.textContent = "NEXUS-REJEITADO";
-                return;
-            }
-            alertaErro.style.display = "none";
-            dadosSucesso.style.display = "flex";
-            tokenCertificado.innerText = resultado.tokenCertificado;
-            document.getElementById('resFinanciamento').innerText = "R$ " + parseFloat(resultado.valorFinanciado).toLocaleString('pt-BR', {minimumFractionDigits: 2});
-            document.getElementById('resPrazo').innerText = resultado.meses + " meses";
-            document.getElementById('resJuros').innerText = resultado.taxaAplicada + "% a.m.";
-            document.getElementById('resParcela').innerText = "R$ " + parseFloat(resultado.parcelaEstimada).toLocaleString('pt-BR', {minimumFractionDigits: 2});
-            const statusEl = document.getElementById('resStatus');
-            statusEl.innerText = resultado.statusOperacao;
-            statusEl.style.color = "#34d399";
-            alert("Cálculo realizado com sucesso!");
-        } catch (erro) {
-            alert("Erro no servidor.");
-        }
+    if (i.id === "inputWhatsClienteGlobal") {
+        let v = i.value.replace(/\D/g, "").slice(0, 11); v = v.replace(/^(\d{2})(\d)/g, "($1) $2").replace(/(\d{5})(\d{4})$/g, "$1-$2"); i.value = v;
     }
+});
 </script>
-
 </body>
 </html>
