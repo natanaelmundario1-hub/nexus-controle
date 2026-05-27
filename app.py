@@ -57,6 +57,7 @@ def calcular_credito():
 
     resposta_simulacao = {}
     
+    # 🏠 ESTEIRA: IMÓVEIS
     if tipo_simulacao == 'imovel':
         valor_imovel = float(dados.get('valor_imovel', 0))
         renda_mensal = float(dados.get('renda_mensal', 0))
@@ -77,6 +78,8 @@ def calcular_credito():
             "parcela_estimada": round(parcela_estimada, 2), "parcela_maxima_permitida": round(parcela_maxima, 2),
             "aprovado_preliminar": viavel, "motivo": "Sucesso" if viavel else "Parcela ultrapassa 30% da renda."
         }
+    
+    # 🚗 ESTEIRA: VEÍCULOS
     elif tipo_simulacao == 'veiculo':
         valor_veiculo = float(dados.get('valor_veiculo', 0))
         ano_veiculo = int(dados.get('ano_veiculo', 2024))
@@ -96,6 +99,71 @@ def calcular_credito():
             "valor_financiado": valor_financiado, "parcela_estimada": round(parcela_estimada, 2),
             "aprovado_preliminar": viavel, "motivo": "Sucesso" if viavel else "Parcela muito alta."
         }
+    # ⚙️ ESTEIRA: MULTAS E DÉBITOS DETRAN
+    elif tipo_simulacao == 'multas':
+        valor_debitos = float(dados.get('valor_debitos', 0))
+        forma_pagamento = dados.get('forma_pagamento', 'cartao')
+        prazo_meses = int(dados.get('prazo_meses', 12))
+        entrada_paga = float(dados.get('entrada', 0))
+
+        taxa_anual = 0.198
+        taxa_mensal = taxa_anual / 12
+        
+        valor_a_financiar = valor_debitos
+        motivo_validacao = "Sucesso"
+        viavel = True
+
+        if forma_pagamento == 'boleto':
+            entrada_minima = valor_debitos * 0.30
+            if entrada_paga < entrada_minima:
+                viavel = False
+                motivo_validacao = f"Entrada insuficiente. Mínimo de 30% ({round(entrada_minima, 2)}) obrigatório para boleto."
+            valor_a_financiar = valor_debitos - entrada_paga
+
+        parcela_estimada = (valor_a_financiar * taxa_mensal) / (1 - (1 + taxa_mensal)**(-prazo_meses)) if prazo_meses > 0 else valor_a_financiar
+        
+        resposta_simulacao = {
+            "tipo": "multas", "forma_pagamento": forma_pagamento, "valor_total_debitos": valor_debitos,
+            "entrada_paga": entrada_paga, "valor_financiado": round(valor_a_financiar, 2),
+            "parcela_estimada": round(parcela_estimada, 2), "aprovado_preliminar": viavel, "motivo": motivo_validacao
+        }
+
+    # 🌾 ESTEIRA: CRÉDITO AGRO (PLANO SAFRA)
+    elif tipo_simulacao == 'agro':
+        valor_projeto = float(dados.get('valor_projeto', 0))
+        faturamento_anual = float(dados.get('faturamento_anual', 0))
+        ciclos_meses = int(dados.get('prazo_meses', 12))
+        categoria = dados.get('categoria_projeto', 'Maquinas')
+
+        taxa_anual = 0.085  # Juros subsidiados Agro
+        taxa_mensal = taxa_anual / 12
+        viavel = faturamento_anual >= (valor_projeto * 0.40)
+        
+        parcela_estimada = (valor_projeto * taxa_mensal) / (1 - (1 + taxa_mensal)**(-ciclos_meses))
+
+        resposta_simulacao = {
+            "tipo": "agro", "banco_simulado": banco, "categoria": categoria,
+            "valor_financiado": valor_projeto, "parcela_estimada_mensal": round(parcela_estimada, 2),
+            "aprovado_preliminar": viavel, "motivo": "Sucesso" if viavel else "Faturamento anual abaixo da margem de garantia de 40%."
+        }
+
+    # 🌐 ESTEIRA: GLOBAL / CAPTAÇÃO OFFSHORE
+    elif tipo_simulacao == 'global':
+        montante_captacao = float(dados.get('valor_captacao', 0))
+        moeda = dados.get('moeda', 'USD').upper()
+        carencia_meses = int(dados.get('carencia_meses', 24))
+        prazo_meses = int(dados.get('prazo_meses', 120))
+
+        taxa_anual = 0.045  # Juros internacionais baixos
+        taxa_mensal = taxa_anual / 12
+        parcela_estimada = (montante_captacao * taxa_mensal) / (1 - (1 + taxa_mensal)**(-prazo_meses))
+
+        resposta_simulacao = {
+            "tipo": "global", "moeda_indexadora": moeda, "montante": montante_captacao,
+            "carencia_meses": carencia_meses, "taxa_aplicada": "4.5% a.a.",
+            "parcela_estimada_pos_carencia": round(parcela_estimada, 2),
+            "aprovado_preliminar": True, "motivo": "Simulação Offshore gerada para Comitê Internacional."
+        }
 
     return jsonify({"sucesso": True, "resultado": resposta_simulacao, "creditos_restantes": 9999})
 
@@ -107,11 +175,11 @@ def consultar_score():
     cpf_limpo = "".join([c for c in str(cpf) if c.isdigit()])
     ultimo_digito = int(cpf_limpo[-1]) if cpf_limpo else 5
     
-    if ultimo_digito == 1 or ultimo_digito == 2 or ultimo_digito == 3:
+    if ultimo_digito in [1, 2, 3]:
         score = 320
         classificacao = "Ruim"
         recomendacao = "Alto risco. Não recomendado sem avalista estruturado."
-    elif ultimo_digito == 4 or ultimo_digito == 5 or ultimo_digito == 6:
+    elif ultimo_digito in [4, 5, 6]:
         score = 610
         classificacao = "Bom"
         recomendacao = "Risco moderado. Viável com entrada padrão."
