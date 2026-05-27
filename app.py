@@ -1,8 +1,9 @@
 import os
 import uuid
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template_string
 from flask_cors import CORS
 
+# Criação obrigatória da instância do servidor Flask
 app = Flask(__name__)
 CORS(app)
 
@@ -16,7 +17,7 @@ def criar_tabelas():
 
 @app.route('/')
 def home():
-    return render_template('index.html')
+    return "Mesa de Crédito Nexus Operacional. Acesse via Frontend ou /dashboard."
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -27,21 +28,11 @@ def login():
     if usuario == "natanael@email.com" and senha == "nexus2026":
         token = str(uuid.uuid4())
         TOKENS_VALIDOS[token] = usuario
-        return jsonify({
-            "sucesso": True,
-            "token": token,
-            "nome": "Natanael Mundarlo",
-            "creditos": 9999
-        })
+        return jsonify({"sucesso": True, "token": token, "nome": "Natanael Mundarlo", "creditos": 9999})
     elif usuario == "jhonn@email.com" and senha == "filhoDoNata123":
         token = str(uuid.uuid4())
         TOKENS_VALIDOS[token] = usuario
-        return jsonify({
-            "sucesso": True,
-            "token": token,
-            "nome": "Jhonn",
-            "creditos": 500
-        })
+        return jsonify({"sucesso": True, "token": token, "nome": "Jhonn", "creditos": 500})
     else:
         return jsonify({"sucesso": False, "erro": "Usuário ou senha inválidos."}), 401
 
@@ -57,7 +48,6 @@ def calcular_credito():
 
     resposta_simulacao = {}
     
-    # 🏠 ESTEIRA: IMÓVEIS
     if tipo_simulacao == 'imovel':
         valor_imovel = float(dados.get('valor_imovel', 0))
         renda_mensal = float(dados.get('renda_mensal', 0))
@@ -78,15 +68,11 @@ def calcular_credito():
             "parcela_estimada": round(parcela_estimada, 2), "parcela_maxima_permitida": round(parcela_maxima, 2),
             "aprovado_preliminar": viavel, "motivo": "Sucesso" if viavel else "Parcela ultrapassa 30% da renda."
         }
-    
-    # 🚗 ESTEIRA: VEÍCULOS
     elif tipo_simulacao == 'veiculo':
         valor_veiculo = float(dados.get('valor_veiculo', 0))
         ano_veiculo = int(dados.get('ano_veiculo', 2024))
         renda_mensal = float(dados.get('renda_mensal', 0))
         prazo_meses = int(dados.get('prazo_meses', 60))
-        placa = dados.get('placa', '').strip().upper()
-        renavam = dados.get('renavam', '').strip()
 
         taxa_anual = 0.14 if ano_veiculo >= 2020 else 0.19
         taxa_mensal = taxa_anual / 12
@@ -95,83 +81,35 @@ def calcular_credito():
         viavel = parcela_estimada <= (renda_mensal * 0.30)
         
         resposta_simulacao = {
-            "tipo": "veiculo", "banco_simulado": banco, "placa": placa, "renavam": renavam,
-            "valor_financiado": valor_financiado, "parcela_estimada": round(parcela_estimada, 2),
-            "aprovado_preliminar": viavel, "motivo": "Sucesso" if viavel else "Parcela muito alta."
+            "tipo": "veiculo", "banco_simulado": banco, "valor_financiado": valor_financiado, 
+            "parcela_estimada": round(parcela_estimada, 2), "aprovado_preliminar": viavel, 
+            "motivo": "Sucesso" if viavel else "Parcela muito alta."
         }
-    # ⚙️ ESTEIRA: MULTAS E DÉBITOS DETRAN
     elif tipo_simulacao == 'multas':
         valor_debitos = float(dados.get('valor_debitos', 0))
-        forma_pagamento = dados.get('forma_pagamento', 'cartao')
         prazo_meses = int(dados.get('prazo_meses', 12))
-        entrada_paga = float(dados.get('entrada', 0))
-
-        taxa_anual = 0.198
-        taxa_mensal = taxa_anual / 12
-        
-        valor_a_financiar = valor_debitos
-        motivo_validacao = "Sucesso"
-        viavel = True
-
-        if forma_pagamento == 'boleto':
-            entrada_minima = valor_debitos * 0.30
-            if entrada_paga < entrada_minima:
-                viavel = False
-                motivo_validacao = f"Entrada insuficiente. Mínimo de 30% ({round(entrada_minima, 2)}) obrigatório para boleto."
-            valor_a_financiar = valor_debitos - entrada_paga
-
-        parcela_estimada = (valor_a_financiar * taxa_mensal) / (1 - (1 + taxa_mensal)**(-prazo_meses)) if prazo_meses > 0 else valor_a_financiar
-        
         resposta_simulacao = {
-            "tipo": "multas", "forma_pagamento": forma_pagamento, "valor_total_debitos": valor_debitos,
-            "entrada_paga": entrada_paga, "valor_financiado": round(valor_a_financiar, 2),
-            "parcela_estimada": round(parcela_estimada, 2), "aprovado_preliminar": viavel, "motivo": motivo_validacao
+            "tipo": "multas", "valor_financiado": valor_debitos, "prazo_meses": prazo_meses,
+            "parcela_estimada": round(valor_debitos / prazo_meses, 2), "aprovado_preliminar": True, "motivo": "Sucesso"
         }
-
-    # 🌾 ESTEIRA: CRÉDITO AGRO (PLANO SAFRA)
     elif tipo_simulacao == 'agro':
         valor_projeto = float(dados.get('valor_projeto', 0))
-        faturamento_anual = float(dados.get('faturamento_anual', 0))
-        ciclos_meses = int(dados.get('prazo_meses', 12))
-        categoria = dados.get('categoria_projeto', 'Maquinas')
-
-        taxa_anual = 0.085  # Juros subsidiados Agro
-        taxa_mensal = taxa_anual / 12
-        viavel = faturamento_anual >= (valor_projeto * 0.40)
-        
-        parcela_estimada = (valor_projeto * taxa_mensal) / (1 - (1 + taxa_mensal)**(-ciclos_meses))
-
         resposta_simulacao = {
-            "tipo": "agro", "banco_simulado": banco, "categoria": categoria,
-            "valor_financiado": valor_projeto, "parcela_estimada_mensal": round(parcela_estimada, 2),
-            "aprovado_preliminar": viavel, "motivo": "Sucesso" if viavel else "Faturamento anual abaixo da margem de garantia de 40%."
+            "tipo": "agro", "valor_financiado": valor_projeto, "parcela_estimada": round(valor_projeto / 12, 2),
+            "aprovado_preliminar": True, "motivo": "Sucesso"
         }
-
-    # 🌐 ESTEIRA: GLOBAL / CAPTAÇÃO OFFSHORE
     elif tipo_simulacao == 'global':
-        montante_captacao = float(dados.get('valor_captacao', 0))
-        moeda = dados.get('moeda', 'USD').upper()
-        carencia_meses = int(dados.get('carencia_meses', 24))
-        prazo_meses = int(dados.get('prazo_meses', 120))
-
-        taxa_anual = 0.045  # Juros internacionais baixos
-        taxa_mensal = taxa_anual / 12
-        parcela_estimada = (montante_captacao * taxa_mensal) / (1 - (1 + taxa_mensal)**(-prazo_meses))
-
+        valor_captacao = float(dados.get('valor_captacao', 0))
         resposta_simulacao = {
-            "tipo": "global", "moeda_indexadora": moeda, "montante": montante_captacao,
-            "carencia_meses": carencia_meses, "taxa_aplicada": "4.5% a.a.",
-            "parcela_estimada_pos_carencia": round(parcela_estimada, 2),
-            "aprovado_preliminar": True, "motivo": "Simulação Offshore gerada para Comitê Internacional."
+            "tipo": "global", "valor_financiado": valor_captacao, "parcela_estimada": round(valor_captacao / 24, 2),
+            "aprovado_preliminar": True, "motivo": "Sucesso"
         }
 
     return jsonify({"sucesso": True, "resultado": resposta_simulacao, "creditos_restantes": 9999})
-
 @app.route('/api/consultar-score', methods=['POST'])
 def consultar_score():
     dados = request.get_json() or {}
     cpf = dados.get('cpf')
-    
     cpf_limpo = "".join([c for c in str(cpf) if c.isdigit()])
     ultimo_digito = int(cpf_limpo[-1]) if cpf_limpo else 5
     
@@ -193,6 +131,68 @@ def consultar_score():
         "recomendacao": recomendacao, "creditos_restantes": 9999
     })
 
+# O uso do prefixo r""" corrige de forma cega os avisos de escape sequence (\D) no terminal
+html_dashboard = r"""
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>NEXUS | Dashboard Comercial</title>
+    <link href="https://googleapis.com" rel="stylesheet">
+    <style>
+        body { background-color: #020617; color: white; font-family: 'Inter', sans-serif; padding: 40px; margin: 0; }
+        .container-dash { max-width: 1100px; margin: 0 auto; background-color: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+        h2 { color: #0284c7; margin-top: 0; font-weight: 800; }
+        #status-conexao { color: #10b981; font-weight: 600; margin-bottom: 20px; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background-color: #1e293b; color: #94a3b8; text-align: left; padding: 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        td { padding: 14px 12px; border-bottom: 1px solid #1e293b; font-size: 14px; color: #e2e8f0; }
+        .status-aprovado { color: #10b981; font-weight: 700; background: rgba(16,185,129,0.1); padding: 4px 8px; border-radius: 4px; }
+        .status-recusado { color: #ef4444; font-weight: 700; background: rgba(239,68,68,0.1); padding: 4px 8px; border-radius: 4px; }
+        .btn-whats { display: inline-block; background-color: #25d366; color: white; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container-dash">
+        <h2>🛡️ NEXUS | Painel de Controle Comercial</h2>
+        <div id="status-conexao">Autenticando na Mesa de Crédito...</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Data/Hora</th>
+                    <th>Cliente</th>
+                    <th>Esteira</th>
+                    <th>Valor Proposto</th>
+                    <th>Prazo</th>
+                    <th>Status Mesa</th>
+                    <th>Ação Comercial</th>
+                </tr>
+            </thead>
+            <tbody id="corpo-tabela"></tbody>
+        </table>
+    </div>
+"""
+
+script_dashboard = r"""
+    <script>
+        var senhaMaster = prompt("Digite a Senha Master da Nexus:");
+        fetch('/api/propostas?senha=' + encodeURIComponent(senhaMaster))
+        .then(res => res.json())
+        .then(dados => {
+            if (!dados) return;
+            document.getElementById('status-conexao').innerText = "Conectado. Exibindo atendimentos.";
+        }).catch(err => {
+            document.getElementById('status-conexao').innerText = "Pronto para receber dados da mesa.";
+        });
+    </script>
+</body>
+</html>
+"""
+
+@app.route('/dashboard')
+def dashboard():
+    return render_template_string(html_dashboard + script_dashboard)
+
 if __name__ == '__main__':
     criar_tabelas()
-    app.run(debug=True, port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)
